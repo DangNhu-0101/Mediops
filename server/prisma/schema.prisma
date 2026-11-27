@@ -1,0 +1,671 @@
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model DonVi {
+  Id                     String            @id @default(uuid()) @map("id")
+  MaDonVi                String            @unique @map("maDonVi")
+  TenDonVi               String            @map("tenDonVi")
+  Email                  String?           @map("email")
+  SoDienThoai            String?           @map("soDienThoai")
+  DiaChi                 String?           @map("diaChi")
+  DangHoatDong           Boolean           @default(true) @map("dangHoatDong")
+  NgayTao                DateTime          @default(now()) @map("ngayTao")
+  NgayCapNhat            DateTime          @updatedAt @map("ngayCapNhat")
+  DanhSachNguoiDung      NguoiDung[]
+  DanhSachDuAn           DuAn[]
+  DanhSachStudio         PhongStudio[]
+  DanhSachDanhMuc        DanhMucThietBi[]
+  DanhSachKho            Kho[]
+  DanhSachSuCoVanHanh    SuCoVanHanh[]
+  DanhSachPhienQuyetDinh PhienQuyetDinh[]
+  DanhSachGiuCho         GiuChoTaiNguyen[]
+  DanhSachLoiMoi         LoiMoiThayCa[]
+  DanhSachNhomQuyen      NhomQuyen[]
+  DanhSachChucDanh       ChucDanh[]
+
+  @@index([DangHoatDong])
+  @@map("don_vi")
+}
+
+// Nhóm quyền do quản trị đơn vị tự định nghĩa; mỗi người dùng đơn vị thuộc đúng một nhóm.
+model NhomQuyen {
+  Id                String      @id @default(uuid()) @map("id")
+  DonViId           String      @map("donViId")
+  MaNhom            String      @map("maNhom")
+  TenNhom           String      @map("tenNhom")
+  MoTa              String?     @map("moTa")
+  Quyen             Json        @default("[]") @map("quyen")
+  LaMau             Boolean     @default(false) @map("laMau")
+  NgayTao           DateTime    @default(now()) @map("ngayTao")
+  NgayCapNhat       DateTime    @updatedAt @map("ngayCapNhat")
+  DonVi             DonVi       @relation(fields: [DonViId], references: [Id], onDelete: Cascade)
+  DanhSachNguoiDung NguoiDung[]
+
+  @@unique([DonViId, MaNhom])
+  @@unique([DonViId, TenNhom])
+  @@map("nhom_quyen")
+}
+
+// Chức danh chuyên môn dùng khi phân công ca; không cấp quyền.
+model ChucDanh {
+  Id                String      @id @default(uuid()) @map("id")
+  // Null là chức danh dùng chung do quản trị hệ thống quản lý.
+  DonViId           String?     @map("donViId")
+  MaChucDanh        String      @map("maChucDanh")
+  TenChucDanh       String      @map("tenChucDanh")
+  DangSuDung        Boolean     @default(true) @map("dangSuDung")
+  NgayTao           DateTime    @default(now()) @map("ngayTao")
+  NgayCapNhat       DateTime    @updatedAt @map("ngayCapNhat")
+  DonVi             DonVi?      @relation(fields: [DonViId], references: [Id], onDelete: Cascade)
+  DanhSachNguoiDung NguoiDung[]
+
+  @@unique([DonViId, MaChucDanh])
+  @@unique([DonViId, TenChucDanh])
+  @@map("chuc_danh")
+}
+
+model Kho {
+  Id                  String          @id @default(uuid()) @map("id")
+  DonViId             String          @map("donViId")
+  MaKho               String          @map("maKho")
+  TenKho              String          @map("tenKho")
+  DiaChi              String          @map("diaChi")
+  ViDo                Decimal         @map("viDo") @db.Decimal(9, 6)
+  KinhDo              Decimal         @map("kinhDo") @db.Decimal(9, 6)
+  BanKinhXacMinhMet   Int             @default(100) @map("banKinhXacMinhMet")
+  DangHoatDong        Boolean         @default(true) @map("dangHoatDong")
+  NgayTao             DateTime        @default(now()) @map("ngayTao")
+  NgayCapNhat         DateTime        @updatedAt @map("ngayCapNhat")
+  DonVi               DonVi           @relation(fields: [DonViId], references: [Id], onDelete: Cascade)
+  DanhSachThietBi     ThietBi[]
+  DanhSachGiaoDich    GiaoDichKho[]
+  DanhSachNhatKyNguon NhatKyMuonTra[] @relation("KhoNguonNhatKy")
+  DanhSachSuCo        SuCoBaoTri[]
+
+  @@unique([DonViId, MaKho])
+  @@index([DonViId, DangHoatDong])
+  @@map("kho")
+}
+
+enum TrangThaiDuAn {
+  DANG_CHUAN_BI
+  DANG_SAN_XUAT
+  HOAN_THANH
+  DA_HUY
+}
+
+enum TrangThaiStudio {
+  SAN_SANG
+  BAO_TRI
+  DONG_CUA
+}
+
+enum TrangThaiThietBi {
+  SAN_SANG
+  DANG_SU_DUNG
+  BAO_TRI
+  HU_HONG
+}
+
+enum TrangThaiCaQuay {
+  DU_THAO
+  DA_DUYET
+  DANG_DIEN_RA
+  HOAN_THANH
+  DA_HUY
+}
+
+enum TrangThaiMuonTra {
+  CHO_XUAT_KHO
+  DA_XUAT_KHO
+  DA_NHAP_KHO
+  THAT_LAC
+}
+
+enum MucDoSuCo {
+  NHE
+  TRUNG_BINH
+  NGHIEM_TRONG
+}
+
+enum TrangThaiSuCo {
+  CHO_XU_LY
+  DANG_SUA_CHUA
+  DA_KHAC_PHUC
+}
+
+enum NguonSuCo {
+  NHAP_KHO
+  TRONG_QUA_TRINH_SU_DUNG
+  KIEM_TRA_KHO
+}
+
+enum LoaiHanhDong {
+  XUAT_KHO
+  NHAP_KHO
+  CAP_NHAT_TRANG_THAI
+}
+
+enum PhuongThucQuet {
+  QUET_QR_CAMERA
+  NHAP_TAY
+}
+
+enum TinhTrangTraThietBi {
+  BINH_THUONG
+  CAN_KIEM_TRA
+  HU_HONG
+}
+
+enum LoaiTaiNguyen {
+  THIET_BI
+  NHAN_SU
+  STUDIO
+}
+
+model NguoiDung {
+  QuanTriDonVi          Boolean             @default(false) @map("quanTriDonVi")
+  LaQuanTriHeThong      Boolean             @default(false) @map("laQuanTriHeThong")
+  PhienBanToken         Int                 @default(0) @map("phienBanToken")
+  Id                    String              @id @default(uuid()) @map("id")
+  TenDangNhap           String              @unique @map("tenDangNhap")
+  MatKhauHash           String              @map("matKhauHash")
+  HoTen                 String              @map("hoTen")
+  Email                 String              @unique @map("email")
+  SoDienThoai           String?             @map("soDienThoai")
+  AnhDaiDienUrl         String?             @map("anhDaiDienUrl")
+  AnhDaiDienPublicId    String?             @map("anhDaiDienPublicId")
+  GioiThieu             String?             @map("gioiThieu")
+  DonViId               String?             @map("donViId")
+  NhomQuyenId           String?             @map("nhomQuyenId")
+  ChucDanhId            String?             @map("chucDanhId")
+  NgayTao               DateTime            @default(now()) @map("ngayTao")
+  DonVi                 DonVi?              @relation(fields: [DonViId], references: [Id])
+  NhomQuyen             NhomQuyen?          @relation(fields: [NhomQuyenId], references: [Id])
+  ChucDanh              ChucDanh?           @relation(fields: [ChucDanhId], references: [Id])
+  DuAnTao               DuAn[]              @relation("NguoiTaoDuAn")
+  CaQuayPhuTrach        CaQuay[]            @relation("NguoiPhuTrachCaQuay")
+  CaQuayThamGia         CaQuayNhanSu[]
+  SuCoBaoCao            SuCoBaoTri[]        @relation("NguoiBaoCaoSuCo")
+  SuCoBatDauXuLy        SuCoBaoTri[]        @relation("NguoiBatDauXuLySuCo")
+  SuCoHoanTat           SuCoBaoTri[]        @relation("NguoiHoanTatSuCo")
+  NhatKyXuLySuCo        NhatKyXuLySuCo[]
+  NhatKyThaoTac         NhatKyMuonTra[]
+  GiaoDichKho           GiaoDichKho[]
+  SuCoVanHanhBaoCao     SuCoVanHanh[]       @relation("NguoiBaoCaoSuCoVanHanh")
+  NhatKySuCoVanHanh     NhatKySuCoVanHanh[] @relation("NguoiThucHienNhatKySuCoVanHanh")
+  LoThayThePhuTrach     LoThayTheThietBi[]  @relation("NguoiPhuTrachLoThayThe")
+  PhienQuyetDinhTao     PhienQuyetDinh[]    @relation("NguoiTaoPhienQuyetDinh")
+  LoiMoiNhan            LoiMoiThayCa[]      @relation("NguoiNhanLoiMoi")
+  LoiMoiGui             LoiMoiThayCa[]      @relation("NguoiGuiLoiMoi")
+  LoiMoiThayChoMinh     LoiMoiThayCa[]      @relation("NguoiCuLoiMoi")
+  NhatKyLoiMoi          NhatKyLoiMoi[]      @relation("NguoiThucHienNhatKyLoiMoi")
+  // Trình độ 1-5 của nhân sự theo chức danh đang giữ.
+  TrinhDo               Int?                @map("trinhDo")
+  CacKhoangKhongKhaDung Json                @default("[]") @map("cacKhoangKhongKhaDung")
+
+  @@index([DonViId, NhomQuyenId])
+  @@index([DonViId, ChucDanhId])
+  @@map("nguoi_dung")
+}
+
+model DuAn {
+  Id           String        @id @default(uuid()) @map("id")
+  MaDuAn       String?       @map("maDuAn")
+  TenDuAn      String        @map("tenDuAn")
+  TenKhachHang String?       @map("tenKhachHang")
+  MoTa         String?       @map("moTa")
+  TrangThai    TrangThaiDuAn @default(DANG_CHUAN_BI) @map("trangThai")
+  NguoiTaoId   String        @map("nguoiTaoId")
+  DonViId      String        @map("donViId")
+  NgayTao      DateTime      @default(now()) @map("ngayTao")
+  HanChot      DateTime?     @map("hanChot")
+  NguoiTao     NguoiDung     @relation("NguoiTaoDuAn", fields: [NguoiTaoId], references: [Id])
+  DonVi        DonVi         @relation(fields: [DonViId], references: [Id])
+  DanhSachCa   CaQuay[]
+
+  @@unique([DonViId, MaDuAn])
+  @@index([DonViId, TrangThai])
+  @@map("du_an")
+}
+
+model PhongStudio {
+  Id                    String          @id @default(uuid()) @map("id")
+  MaPhong               String?         @map("maPhong")
+  DonViId               String          @map("donViId")
+  TenPhong              String          @map("tenPhong")
+  DiaDiem               String?         @map("diaDiem")
+  SucChua               Int?            @map("sucChua")
+  KhaNang               Json?           @map("khaNang")
+  TrangThai             TrangThaiStudio @default(SAN_SANG) @map("trangThai")
+  DonVi                 DonVi           @relation(fields: [DonViId], references: [Id])
+  DanhSachCa            CaQuay[]
+  CacKhoangKhongKhaDung Json            @default("[]") @map("cacKhoangKhongKhaDung")
+  NgayTao               DateTime        @default(now()) @map("ngayTao")
+
+  @@unique([DonViId, MaPhong])
+  @@index([DonViId, TrangThai])
+  @@map("phong_studio")
+}
+
+model DanhMucThietBi {
+  Id              String       @id @default(uuid()) @map("id")
+  MaDanhMuc       String?      @map("maDanhMuc")
+  TenDanhMuc      String       @map("tenDanhMuc")
+  DonViId         String       @map("donViId")
+  MoTa            String?      @map("moTa")
+  DonVi           DonVi        @relation(fields: [DonViId], references: [Id])
+  DanhSachThietBi ThietBi[]
+  DanhSachMau     MauThietBi[]
+
+  @@unique([DonViId, MaDanhMuc])
+  @@unique([DonViId, TenDanhMuc])
+  @@map("danh_muc_thiet_bi")
+}
+
+model MauThietBi {
+  Id              String         @id @default(uuid()) @map("id")
+  MaMau           String         @map("maMau")
+  TenMau          String         @map("tenMau")
+  DanhMucId       String         @map("danhMucId")
+  DanhMuc         DanhMucThietBi @relation(fields: [DanhMucId], references: [Id])
+  DanhSachThietBi ThietBi[]
+
+  @@unique([DanhMucId, MaMau])
+  @@unique([Id, DanhMucId])
+  @@map("mau_thiet_bi")
+}
+
+model ThietBi {
+  Id                           String           @id @default(uuid()) @map("id")
+  MaQR                         String           @unique @map("maQR")
+  SoSeri                       String           @unique @map("soSeri")
+  TenThietBi                   String           @map("tenThietBi")
+  DanhMucId                    String           @map("danhMucId")
+  MauThietBiId                 String?          @map("mauThietBiId")
+  MauThietBi                   MauThietBi?      @relation(fields: [MauThietBiId, DanhMucId], references: [Id, DanhMucId], onDelete: NoAction, onUpdate: NoAction)
+  ThongSoKyThuat               Json             @map("thongSoKyThuat")
+  TrangThai                    TrangThaiThietBi @default(SAN_SANG) @map("trangThai")
+  HinhAnhUrl                   String?          @map("hinhAnhUrl")
+  NguonThamKhaoUrl             String?          @map("nguonThamKhaoUrl")
+  ViTriKho                     String?          @map("viTriKho")
+  KhoId                        String?          @map("khoId")
+  ThoiGianKiemTraSauSuDungPhut Int              @default(0) @map("thoiGianKiemTraSauSuDungPhut")
+  DanhMuc                      DanhMucThietBi   @relation(fields: [DanhMucId], references: [Id])
+  Kho                          Kho?             @relation(fields: [KhoId], references: [Id])
+  LichSuCaQuay                 CaQuayThietBi[]
+  DanhSachSuCo                 SuCoBaoTri[]
+  NhatKyMuonTra                NhatKyMuonTra[]
+  CacKhoangKhongKhaDung        Json             @default("[]") @map("cacKhoangKhongKhaDung")
+  DanhSachSuCoVanHanh          SuCoVanHanh[]
+  NgayTao                      DateTime         @default(now()) @map("ngayTao")
+
+  @@index([DanhMucId, TrangThai])
+  @@index([KhoId, TrangThai])
+  @@index([MauThietBiId])
+  @@map("thiet_bi")
+}
+
+model CaQuay {
+  PhienQuyetDinh          PhienQuyetDinh[]
+  NguoiPhuTrachHieuLucTu  DateTime?        @map("daoDienHieuLucTu")
+  StudioHieuLucTu         DateTime?        @map("studioHieuLucTu")
+  LichSuStudio            Json             @default("[]") @map("lichSuStudio")
+  SuCoVanHanh             SuCoVanHanh[]
+  CacYeuCauTaiNguyen      Json             @default("[]") @map("cacYeuCauTaiNguyen")
+  Id                      String           @id @default(uuid()) @map("id")
+  MaCaQuay                String?          @unique @map("maCaQuay")
+  DuAnId                  String           @map("duAnId")
+  TieuDe                  String           @map("tieuDe")
+  ThoiGianBatDau          DateTime         @map("thoiGianBatDau")
+  ThoiGianKetThuc         DateTime         @map("thoiGianKetThuc")
+  PhongStudioId           String?          @map("phongStudioId")
+  GhiChuDiaDiem           String?          @map("ghiChuDiaDiem")
+  NguoiPhuTrachId         String           @map("daoDienId")
+  TrangThai               TrangThaiCaQuay  @default(DU_THAO) @map("trangThai")
+  GhiChu                  String?          @map("ghiChu")
+  MucDoUuTien             Int              @default(50) @map("mucDoUuTien")
+  CoTheDoiLich            Boolean          @default(false) @map("coTheDoiLich")
+  ThoiGianBatDauSomNhat   DateTime?        @map("thoiGianBatDauSomNhat")
+  ThoiGianKetThucMuonNhat DateTime?        @map("thoiGianKetThucMuonNhat")
+  ThoiGianChuanBiPhut     Int              @default(0) @map("thoiGianChuanBiPhut")
+  ThoiGianThuHoiPhut      Int              @default(0) @map("thoiGianThuHoiPhut")
+  NgayTao                 DateTime         @default(now()) @map("ngayTao")
+  DuAn                    DuAn             @relation(fields: [DuAnId], references: [Id])
+  PhongStudio             PhongStudio?     @relation(fields: [PhongStudioId], references: [Id])
+  NguoiPhuTrach           NguoiDung        @relation("NguoiPhuTrachCaQuay", fields: [NguoiPhuTrachId], references: [Id])
+  DanhSachThietBi         CaQuayThietBi[]
+  DanhSachNhanSu          CaQuayNhanSu[]
+  SuCoPhatSinh            SuCoBaoTri[]
+  NhatKyMuonTra           NhatKyMuonTra[]
+  GiaoDichKho             GiaoDichKho[]
+
+  @@index([ThoiGianBatDau, ThoiGianKetThuc])
+  @@index([PhongStudioId, TrangThai])
+  @@index([DuAnId])
+  @@index([NguoiPhuTrachId])
+  @@map("ca_quay")
+}
+
+model CaQuayThietBi {
+  HieuLucTu        DateTime?         @map("hieuLucTu")
+  HieuLucDen       DateTime?         @map("hieuLucDen")
+  LoThayTheId      String?           @map("loThayTheId")
+  LoThayThe        LoThayTheThietBi? @relation(fields: [LoThayTheId], references: [Id], onDelete: Restrict)
+  Id               String            @id @default(uuid()) @map("id")
+  CaQuayId         String            @map("caQuayId")
+  ThietBiId        String            @map("thietBiId")
+  TrangThaiMuonTra TrangThaiMuonTra  @default(CHO_XUAT_KHO) @map("trangThaiMuonTra")
+  ThoiGianXuatKho  DateTime?         @map("thoiGianXuatKho")
+  ThoiGianNhapKho  DateTime?         @map("thoiGianNhapKho")
+  GhiChu           String?           @map("ghiChu")
+  CaQuay           CaQuay            @relation(fields: [CaQuayId], references: [Id], onDelete: Cascade)
+  ThietBi          ThietBi           @relation(fields: [ThietBiId], references: [Id])
+
+  @@unique([CaQuayId, ThietBiId])
+  @@index([ThietBiId])
+  @@map("ca_quay_thiet_bi")
+}
+
+model CaQuayNhanSu {
+  HieuLucTu        DateTime? @map("hieuLucTu")
+  HieuLucDen       DateTime? @map("hieuLucDen")
+  Id               String    @id @default(uuid()) @map("id")
+  CaQuayId         String    @map("caQuayId")
+  NguoiDungId      String    @map("nguoiDungId")
+  ChucDanhPhanCong String    @map("vaiTroPhanCong")
+  CaQuay           CaQuay    @relation(fields: [CaQuayId], references: [Id], onDelete: Cascade)
+  NguoiDung        NguoiDung @relation(fields: [NguoiDungId], references: [Id])
+
+  @@unique([CaQuayId, NguoiDungId])
+  @@index([NguoiDungId])
+  @@map("ca_quay_nhan_su")
+}
+
+model SuCoBaoTri {
+  SuCoVanHanhId           String?           @map("suCoVanHanhId")
+  SuCoVanHanh             SuCoVanHanh?      @relation(fields: [SuCoVanHanhId], references: [Id], onDelete: Restrict)
+  Id                      String            @id @default(uuid()) @map("id")
+  ThietBiId               String            @map("thietBiId")
+  CaQuayId                String?           @map("caQuayId")
+  KhoId                   String?           @map("khoId")
+  NguoiBaoCaoId           String            @map("nguoiBaoCaoId")
+  NguoiBatDauXuLyId       String?           @map("nguoiBatDauXuLyId")
+  NguoiHoanTatId          String?           @map("nguoiHoanTatId")
+  Nguon                   NguonSuCo         @default(KIEM_TRA_KHO) @map("nguon")
+  MucDo                   MucDoSuCo         @default(TRUNG_BINH) @map("mucDo")
+  MoTaLoi                 String            @map("moTaLoi")
+  TrangThai               TrangThaiSuCo     @default(CHO_XU_LY) @map("trangThai")
+  NgayTao                 DateTime          @default(now()) @map("ngayTao")
+  NgayBatDauXuLy          DateTime?         @map("ngayBatDauXuLy")
+  NgayHoanTat             DateTime?         @map("ngayHoanTat")
+  PhuongAnXuLy            String?           @map("phuongAnXuLy")
+  TrangThaiThietBiSauXuLy TrangThaiThietBi? @map("trangThaiThietBiSauXuLy")
+  ThietBi                 ThietBi           @relation(fields: [ThietBiId], references: [Id])
+  CaQuay                  CaQuay?           @relation(fields: [CaQuayId], references: [Id])
+  Kho                     Kho?              @relation(fields: [KhoId], references: [Id])
+  NguoiBaoCao             NguoiDung         @relation("NguoiBaoCaoSuCo", fields: [NguoiBaoCaoId], references: [Id])
+  NguoiBatDauXuLy         NguoiDung?        @relation("NguoiBatDauXuLySuCo", fields: [NguoiBatDauXuLyId], references: [Id])
+  NguoiHoanTat            NguoiDung?        @relation("NguoiHoanTatSuCo", fields: [NguoiHoanTatId], references: [Id])
+  DanhSachAnh             Json              @default("[]") @map("danhSachAnh")
+  NhatKyXuLy              NhatKyXuLySuCo[]
+
+  @@index([TrangThai, NgayTao])
+  @@index([ThietBiId, TrangThai])
+  @@index([KhoId, TrangThai])
+  @@map("su_co_bao_tri")
+}
+
+enum TrangThaiSuCoVanHanh {
+  MOI_BAO
+  DA_XAC_MINH
+  DANG_XU_LY
+  DA_KHOI_PHUC
+  DA_HUY
+}
+
+model SuCoVanHanh {
+  DanhSachAnh     Json                 @default("[]") @map("danhSachAnh")
+  Id              String               @id @default(uuid()) @map("id")
+  DonViId         String               @map("donViId")
+  CaQuayId        String?              @map("caQuayId")
+  ThietBiId       String?              @map("thietBiId")
+  NguoiBaoCaoId   String               @map("nguoiBaoCaoId")
+  MaYeuCau        String               @map("maYeuCau")
+  Nhom            String               @map("nhom")
+  NguyenNhan      String               @map("nguyenNhan")
+  MucAnhHuong     String               @map("mucAnhHuong")
+  MoTa            String               @map("moTa")
+  TaiNguyen       Json                 @default("[]") @map("taiNguyen")
+  ThoiDiemXayRa   DateTime             @map("thoiDiemXayRa")
+  DuKienPhucHoi   DateTime?            @map("duKienPhucHoi")
+  KetThucAnhHuong DateTime?            @map("ketThucAnhHuong")
+  NgayTao         DateTime             @default(now()) @map("ngayTao")
+  TrangThai       TrangThaiSuCoVanHanh @default(MOI_BAO) @map("trangThai")
+  CaQuay          CaQuay?              @relation(fields: [CaQuayId], references: [Id], onDelete: Restrict)
+  BaoTri          SuCoBaoTri[]
+  LichSu          NhatKySuCoVanHanh[]
+  LoThayThe       LoThayTheThietBi[]
+  DonVi           DonVi                @relation(fields: [DonViId], references: [Id], onDelete: Restrict, onUpdate: Cascade)
+  ThietBi         ThietBi?             @relation(fields: [ThietBiId], references: [Id], onDelete: Restrict, onUpdate: Cascade)
+  NguoiBaoCao     NguoiDung            @relation("NguoiBaoCaoSuCoVanHanh", fields: [NguoiBaoCaoId], references: [Id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([DonViId, NguoiBaoCaoId, MaYeuCau])
+  @@index([DonViId, TrangThai, ThoiDiemXayRa])
+  @@index([CaQuayId, NgayTao])
+  @@index([ThietBiId])
+  @@map("su_co_van_hanh")
+}
+
+model NhatKySuCoVanHanh {
+  Id              String      @id @default(uuid()) @map("id")
+  SuCoId          String      @map("suCoId")
+  NguoiThucHienId String      @map("nguoiThucHienId")
+  NoiDung         String      @map("noiDung")
+  ThayDoi         Json        @default("{}") @map("thayDoi")
+  NgayTao         DateTime    @default(now()) @map("ngayTao")
+  SuCo            SuCoVanHanh @relation(fields: [SuCoId], references: [Id], onDelete: Restrict)
+  NguoiThucHien   NguoiDung   @relation("NguoiThucHienNhatKySuCoVanHanh", fields: [NguoiThucHienId], references: [Id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([SuCoId, NgayTao])
+  @@map("nhat_ky_su_co_van_hanh")
+}
+
+model LoThayTheThietBi {
+  Id               String          @id @default(uuid()) @map("id")
+  SuCoId           String          @map("suCoId")
+  NguoiPhuTrachId  String          @map("nguoiPhuTrachId")
+  ThoiDiemHieuLuc  DateTime        @map("thoiDiemHieuLuc")
+  ThoiDiemBanGiao  DateTime?       @map("thoiDiemBanGiao")
+  SuCo             SuCoVanHanh     @relation(fields: [SuCoId], references: [Id], onDelete: Restrict)
+  DanhSachPhanCong CaQuayThietBi[]
+  NguoiPhuTrach    NguoiDung       @relation("NguoiPhuTrachLoThayThe", fields: [NguoiPhuTrachId], references: [Id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([SuCoId])
+  @@map("lo_thay_the_thiet_bi")
+}
+
+model NhatKyXuLySuCo {
+  Id               String           @id @default(uuid()) @map("id")
+  SuCoBaoTriId     String           @map("suCoBaoTriId")
+  NguoiThucHienId  String           @map("nguoiThucHienId")
+  GhiChu           String           @map("ghiChu")
+  TrangThaiThietBi TrangThaiThietBi @map("trangThaiThietBi")
+  NgayTao          DateTime         @default(now()) @map("ngayTao")
+  SuCoBaoTri       SuCoBaoTri       @relation(fields: [SuCoBaoTriId], references: [Id], onDelete: Restrict)
+  NguoiThucHien    NguoiDung        @relation(fields: [NguoiThucHienId], references: [Id], onDelete: Restrict)
+
+  @@index([SuCoBaoTriId, NgayTao])
+  @@map("nhat_ky_xu_ly_su_co")
+}
+
+model NhatKyMuonTra {
+  Id              String               @id @default(uuid()) @map("id")
+  ThietBiId       String               @map("thietBiId")
+  CaQuayId        String               @map("caQuayId")
+  NguoiThucHienId String               @map("nguoiThucHienId")
+  LoaiHanhDong    LoaiHanhDong         @map("loaiHanhDong")
+  PhuongThuc      PhuongThucQuet       @default(QUET_QR_CAMERA) @map("phuongThuc")
+  GhiChuTinhTrang String?              @map("ghiChuTinhTrang")
+  ThoiGian        DateTime             @default(now()) @map("thoiGian")
+  GiaoDichKhoId   String?              @map("giaoDichKhoId")
+  KhoNguonId      String?              @map("khoNguonId")
+  TinhTrangTra    TinhTrangTraThietBi? @map("tinhTrangTra")
+  ThietBi         ThietBi              @relation(fields: [ThietBiId], references: [Id])
+  CaQuay          CaQuay               @relation(fields: [CaQuayId], references: [Id])
+  NguoiThucHien   NguoiDung            @relation(fields: [NguoiThucHienId], references: [Id])
+  GiaoDichKho     GiaoDichKho?         @relation(fields: [GiaoDichKhoId], references: [Id])
+  KhoNguon        Kho?                 @relation("KhoNguonNhatKy", fields: [KhoNguonId], references: [Id])
+
+  @@index([ThoiGian])
+  @@index([ThietBiId, ThoiGian])
+  @@index([GiaoDichKhoId])
+  @@index([KhoNguonId])
+  @@map("nhat_ky_muon_tra")
+}
+
+model GiaoDichKho {
+  Id                  String          @id @default(uuid()) @map("id")
+  KhoId               String          @map("khoId")
+  CaQuayId            String          @map("caQuayId")
+  NguoiThucHienId     String          @map("nguoiThucHienId")
+  LoaiHanhDong        LoaiHanhDong    @map("loaiHanhDong")
+  ViDoGhiNhan         Decimal         @map("viDoGhiNhan") @db.Decimal(9, 6)
+  KinhDoGhiNhan       Decimal         @map("kinhDoGhiNhan") @db.Decimal(9, 6)
+  DoChinhXacMet       Decimal         @map("doChinhXacMet") @db.Decimal(8, 2)
+  KhoangCachDenKhoMet Decimal         @map("khoangCachDenKhoMet") @db.Decimal(10, 2)
+  ViTriDat            Boolean         @map("viTriDat")
+  ThoiDiemGhiNhan     DateTime        @map("thoiDiemGhiNhan")
+  ThoiGian            DateTime        @default(now()) @map("thoiGian")
+  Kho                 Kho             @relation(fields: [KhoId], references: [Id])
+  CaQuay              CaQuay          @relation(fields: [CaQuayId], references: [Id])
+  NguoiThucHien       NguoiDung       @relation(fields: [NguoiThucHienId], references: [Id])
+  DanhSachNhatKy      NhatKyMuonTra[]
+
+  @@index([KhoId, ThoiGian])
+  @@index([CaQuayId, ThoiGian])
+  @@map("giao_dich_kho")
+}
+
+model PhienQuyetDinh {
+  Id             String            @id @default(uuid()) @map("id")
+  DonViId        String            @map("donViId")
+  CaQuayId       String            @map("caQuayId")
+  SuCoId         String            @map("suCoId")
+  NguoiTaoId     String            @map("nguoiTaoId")
+  HieuLuc        DateTime          @map("hieuLuc")
+  NgayTao        DateTime          @default(now()) @map("ngayTao")
+  HetHanLuc      DateTime          @map("hetHanLuc")
+  TrangThai      String            @default("MO") @map("trangThai")
+  KetQua         Json              @map("ketQua")
+  DauVanTay      String            @map("dauVanTay")
+  PhuongAnDaChot String?           @map("phuongAnDaChot")
+  Ca             CaQuay            @relation(fields: [CaQuayId], references: [Id], onDelete: Cascade)
+  GiuCho         GiuChoTaiNguyen[]
+  LoiMoi         LoiMoiThayCa[]
+  DonVi          DonVi             @relation(fields: [DonViId], references: [Id], onDelete: Restrict, onUpdate: Cascade)
+  NguoiTao       NguoiDung         @relation("NguoiTaoPhienQuyetDinh", fields: [NguoiTaoId], references: [Id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([DonViId, CaQuayId, TrangThai])
+  @@index([CaQuayId, TrangThai])
+  @@map("phien_quyet_dinh")
+}
+
+model GiuChoTaiNguyen {
+  Id          String         @id @default(uuid()) @map("id")
+  PhienId     String         @map("phienId")
+  DonViId     String         @map("donViId")
+  Loai        LoaiTaiNguyen  @map("loai")
+  TaiNguyenId String         @map("taiNguyenId")
+  BatDau      DateTime       @map("batDau")
+  KetThuc     DateTime       @map("ketThuc")
+  HetHanLuc   DateTime       @map("hetHanLuc")
+  TrangThai   String         @default("MO") @map("trangThai")
+  Phien       PhienQuyetDinh @relation(fields: [PhienId], references: [Id], onDelete: Restrict)
+  DonVi       DonVi          @relation(fields: [DonViId], references: [Id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([PhienId, Loai, TaiNguyenId, BatDau, KetThuc], map: "giu_cho_phien_tai_nguyen_khoang_key")
+  @@index([DonViId, Loai, TaiNguyenId, TrangThai, HetHanLuc])
+  @@map("giu_cho_tai_nguyen")
+}
+
+model LoiMoiThayCa {
+  Id               String         @id @default(uuid()) @map("id")
+  PhienId          String         @map("phienId")
+  DonViId          String         @map("donViId")
+  PhuongAnId       String         @map("phuongAnId")
+  NguoiNhanId      String         @map("nguoiNhanId")
+  NguoiGuiId       String         @map("nguoiGuiId")
+  NguoiCuId        String         @map("nguoiCuId")
+  ChucDanhPhanCong String         @map("vaiTro")
+  NoiDung          Json           @map("noiDung")
+  GhiChuBanGiao    String         @map("ghiChuBanGiao")
+  HetHanLuc        DateTime       @map("hetHanLuc")
+  TrangThai        String         @default("CHO_PHAN_HOI") @map("trangThai")
+  CoMatLuc         DateTime?      @map("coMatLuc")
+  PhanHoiLuc       DateTime?      @map("phanHoiLuc")
+  Phien            PhienQuyetDinh @relation(fields: [PhienId], references: [Id], onDelete: Restrict)
+  LichSu           NhatKyLoiMoi[]
+  DonVi            DonVi          @relation(fields: [DonViId], references: [Id], onDelete: Restrict, onUpdate: Cascade)
+  NguoiNhan        NguoiDung      @relation("NguoiNhanLoiMoi", fields: [NguoiNhanId], references: [Id], onDelete: Restrict, onUpdate: Cascade)
+  NguoiGui         NguoiDung      @relation("NguoiGuiLoiMoi", fields: [NguoiGuiId], references: [Id], onDelete: Restrict, onUpdate: Cascade)
+  NguoiCu          NguoiDung      @relation("NguoiCuLoiMoi", fields: [NguoiCuId], references: [Id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@unique([PhienId, PhuongAnId, NguoiNhanId])
+  @@index([DonViId, NguoiNhanId, HetHanLuc])
+  @@map("loi_moi_thay_ca")
+}
+
+model NhatKyLoiMoi {
+  Id              String       @id @default(uuid()) @map("id")
+  LoiMoiId        String       @map("loiMoiId")
+  NguoiThucHienId String       @map("nguoiThucHienId")
+  TrangThai       String       @map("trangThai")
+  NgayTao         DateTime     @default(now()) @map("ngayTao")
+  LoiMoi          LoiMoiThayCa @relation(fields: [LoiMoiId], references: [Id], onDelete: Restrict)
+  NguoiThucHien   NguoiDung    @relation("NguoiThucHienNhatKyLoiMoi", fields: [NguoiThucHienId], references: [Id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([LoiMoiId, NgayTao])
+  @@map("nhat_ky_loi_moi")
+}
+
+model CauHinhThoiGianCho {
+  PhanHe String             @id @map("phanHe")
+  SoPhut Int                @map("soPhut")
+  NhatKy NhatKyCauHinhCho[]
+
+  @@map("cau_hinh_thoi_gian_cho")
+}
+
+model NhatKyCauHinhCho {
+  Id         String             @id @default(uuid()) @map("id")
+  PhanHe     String             @map("phanHe")
+  GiaTriCu   Int                @map("giaTriCu")
+  GiaTriMoi  Int                @map("giaTriMoi")
+  NguoiSuaId String             @map("nguoiSuaId")
+  NgayTao    DateTime           @default(now()) @map("ngayTao")
+  CauHinh    CauHinhThoiGianCho @relation(fields: [PhanHe], references: [PhanHe], onDelete: Restrict, onUpdate: Cascade)
+
+  @@map("nhat_ky_cau_hinh_cho")
+}
+
+// Cài đặt cấp hệ thống do tài khoản hệ thống quản lý (một bản ghi duy nhất).
+model CauHinhHeThong {
+  Id               String   @id @default("MAC_DINH") @map("id")
+  TenHeThong       String   @default("MEDIOPS") @map("tenHeThong")
+  KhauHieu         String?  @map("khauHieu")
+  EmailHoTro       String?  @map("emailHoTro")
+  SoDienThoaiHoTro String?  @map("soDienThoaiHoTro")
+  LogoUrl          String?  @map("logoUrl")
+  LogoPublicId     String?  @map("logoPublicId")
+  NgayCapNhat      DateTime @default(now()) @updatedAt @map("ngayCapNhat")
+
+  @@map("cau_hinh_he_thong")
+}
