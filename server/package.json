@@ -6,19 +6,13 @@
   "scripts": {
     "dev": "tsx watch src/App.ts",
     "build": "prisma generate && tsc",
-    "start": "node dist/App.js",
-    "kiem-tra": "tsc --noEmit && tsc --project prisma/tsconfig.json && tsc --project prisma/TrinhDien/tsconfig.json && tsc --project prisma/BoSungDoan/tsconfig.json",
+    "start": "node dist/index.js",
     "test": "node Scripts/ChayKiemThu.mjs",
-    "test:chuan-bi": "node Scripts/ChuanBiKiemThu.mjs",
     "seed": "tsx prisma/Seed.ts",
-    "seed:trinh-dien": "tsx prisma/TrinhDien/SeedTrinhDien.ts",
-    "seed:bo-sung-doan": "tsx prisma/BoSungDoan/BoSungDuLieuDoan.ts",
-    "file-them-nhanh": "tsx Scripts/TaoBoFileThemNhanh.ts",
-    "anh-thiet-bi:xem-truoc": "tsx Scripts/TaiAnhThietBiCloudinary.ts --xem-truoc",
-    "anh-thiet-bi:tai-len": "tsx Scripts/TaiAnhThietBiCloudinary.ts --tai-len",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "studio": "prisma studio"
+
   },
   "dependencies": {
     "@prisma/client": "^6.5.0",

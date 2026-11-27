@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w client\"",
     "build": "npm run build -w server && npm run build -w client",
-    "kiem-tra": "npm run kiem-tra -w server && npm run kiem-tra -w client"
+    "kiem-tra": "npm run kiem-tra -w server && npm run kiem-tra -w client",
+    "start": "npm run start -w server"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
